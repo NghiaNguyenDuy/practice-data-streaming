@@ -12,6 +12,12 @@ def create_data_ingestion_without_fallback_storage(app):
     @app.route('/dataingestion/ingest/<string:topic>/<string:event_key>', methods=['POST'])
     def new_data_without_fallback(topic: str, event_key: str):
         json_data_to_deliver = json.loads(request.data)
+        app.logger.info(
+            'Primary endpoint invoked: topic=%s event_key=%s batch_size=%s',
+            topic,
+            event_key,
+            len(json_data_to_deliver),
+        )
         callback_data_holder = CallbackDataHolder(event_key, json_data_to_deliver)
         for message_to_deliver in json_data_to_deliver:
             normalized_payload = kafka.normalize_message_payload(message_to_deliver)
@@ -25,5 +31,18 @@ def create_data_ingestion_without_fallback_storage(app):
 
         failed_deliveries = callback_data_holder.get_failed_deliveries()
         is_successful_delivery = True if not failed_deliveries else False
+        app.logger.info(
+            'Primary delivery result: topic=%s event_key=%s success=%s failed_count=%s total_count=%s',
+            topic,
+            event_key,
+            is_successful_delivery,
+            len(failed_deliveries),
+            len(json_data_to_deliver),
+        )
+        if failed_deliveries:
+            app.logger.warning(
+                'Primary endpoint failed deliveries returned to client: failed_count=%s',
+                len(failed_deliveries),
+            )
         return Response(json.dumps({'success': is_successful_delivery, 'failed': failed_deliveries}),
                         status=200, mimetype='application/json')

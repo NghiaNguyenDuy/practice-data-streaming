@@ -1,0 +1,35 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+python-example/web-service/.venv/
+python-example/fallback-pipeline/.venv/
+
+# IDE
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and local runtime output
+*.log
+
+# Spark, Kafka replay, and generated lesson data
+python-example/fallback-pipeline/data/lesson3/
+!python-example/fallback-pipeline/data/.gitkeep
+
+# Python bytecode created inside tracked package dirs
+python-example/web-service/webservice/__pycache__/
+
+# Local dependency caches
+.ivy2/

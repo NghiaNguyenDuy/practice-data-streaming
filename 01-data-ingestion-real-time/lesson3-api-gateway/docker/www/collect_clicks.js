@@ -1,7 +1,7 @@
 const BUFFER_SIZE = 5;
-var INGESTION_ENDPOINT = 'http://localhost:8080/dataingestion/ingest/cities';
+// var INGESTION_ENDPOINT = 'http://localhost:8080/dataingestion/ingest/cities';
 // uncomment this for the fallback example
-//var INGESTION_ENDPOINT = 'http://localhost:8080/dataingestionfallback/ingest/cities';
+var INGESTION_ENDPOINT = 'http://localhost:8080/dataingestionfallback/ingest/cities';
 
 $(document).ready(function(){
 

@@ -1,10 +1,11 @@
 import dataclasses
 import json
 import logging
+import os
+import socket
 from typing import Optional
 
 from confluent_kafka import Producer, Message
-import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +18,27 @@ def normalize_message_payload(message) -> str:
     return json.dumps(message)
 
 
+def get_bootstrap_servers() -> str:
+    return os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'localhost:29092')
+
+
+def bootstrap_servers_reachable(timeout_seconds: float = 1.0) -> bool:
+    for server in get_bootstrap_servers().split(','):
+        host, _, port = server.strip().partition(':')
+        if not host or not port:
+            continue
+        try:
+            with socket.create_connection((host, int(port)), timeout=timeout_seconds):
+                return True
+        except OSError:
+            logger.warning('Kafka bootstrap server not reachable: %s', server.strip())
+    return False
+
+
 def create_producer() -> Producer:
-    return Producer({'bootstrap.servers': 'localhost:29092',
+    bootstrap_servers = get_bootstrap_servers()
+    logger.info('Creating Kafka producer for bootstrap servers: %s', bootstrap_servers)
+    return Producer({'bootstrap.servers': bootstrap_servers,
                      'linger.ms': 10 * 1000,  # 10 seconds
                      'batch.num.messages': 10,
                      'retries': 3
@@ -61,10 +81,10 @@ class CallbackDataHolder:
 def create_delivery_callback_function(data_holder: CallbackDataHolder):
     def handle_delivery_result(error, result: Message):
         if error:
-            print('Failure' + error)
             logger.error('Record was not correctly delivered: %s', error)
         else:
-            print('success')
+            logger.info('Record delivered successfully: topic=%s partition=%s offset=%s',
+                        result.topic(), result.partition(), result.offset())
             data_holder.handle_successful_delivery(result)
 
     return handle_delivery_result

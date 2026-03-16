@@ -35,3 +35,15 @@ services:
       - 803:80
     volumes:
       - ./www:/var/www/html
+  fallback_pipeline:
+    profiles:
+      - fallback-pipeline
+    build:
+      context: ../python-example/fallback-pipeline
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - LESSON3_DATA_DIR=/app/data/lesson3
+    volumes:
+      - ../python-example/fallback-pipeline/data:/app/data
