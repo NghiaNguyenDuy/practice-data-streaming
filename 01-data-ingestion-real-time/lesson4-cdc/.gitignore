@@ -1,0 +1,11 @@
+# Local checkpoints created by the streaming consumers
+python-example/checkpoint/
+scala-example/checkpoint/
+
+# Scala build output
+scala-example/target/
+
+# Local IDE and Python caches if created inside the lesson folder
+**/__pycache__/
+**/.ipynb_checkpoints/
+*.pyc

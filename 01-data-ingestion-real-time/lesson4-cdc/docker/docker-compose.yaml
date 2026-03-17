@@ -1,0 +1,68 @@
+services:
+  zookeeper:
+    image: 'debezium/zookeeper:2.7.3.Final'
+    container_name: docker_zookeeper_1
+    ports:
+      - '2181:2181'
+  kafka:
+    image: 'debezium/kafka:2.7.3.Final'
+    container_name: docker_kafka_1
+    depends_on:
+      - zookeeper
+    ports:
+      - '9092:9092'
+      - '29092:29092'
+    environment:
+      - ZOOKEEPER_CONNECT=zookeeper:2181
+      - BROKER_ID=1
+      - KAFKA_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_DELETE_TOPIC_ENABLE=true
+  postgres:
+    image: 'debezium/example-postgres:2.7.3.Final'
+    container_name: docker_postgres_1
+    ports:
+     - 5432:5432
+    environment:
+     - POSTGRES_USER=postgres
+     - POSTGRES_PASSWORD=postgres
+    volumes:
+    - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+  connect:
+    image: 'debezium/connect:2.7.3.Final'
+    container_name: docker_connect_1
+    ports:
+     - 8083:8083
+    links:
+     - kafka
+     - postgres
+    environment:
+     - BOOTSTRAP_SERVERS=kafka:9092
+     - GROUP_ID=1
+     - CONFIG_STORAGE_TOPIC=my_connect_configs
+     - OFFSET_STORAGE_TOPIC=my_connect_offsets
+     - STATUS_STORAGE_TOPIC=my_connect_statuses
+  spark-python-consumer:
+    image: 'spark:3.5.7-java17-python3'
+    container_name: docker_spark_python_consumer_1
+    depends_on:
+      - kafka
+      - connect
+    restart: unless-stopped
+    command:
+      - /opt/spark/bin/spark-submit
+      - --conf
+      - spark.jars.ivy=/tmp/.ivy2
+      - --packages
+      - org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.7
+      - /opt/app/new_rows_by_device_type_and_os_counter_app.py
+    environment:
+      - HOME=/tmp
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC=bde.bde_module3_lesson4.visits_new
+      - CHECKPOINT_LOCATION=/opt/app/checkpoint/new_rows_by_device_type_and_os_counter
+      - SPARK_LOCAL_HOSTNAME=spark-python-consumer
+    volumes:
+      - ../python-example:/opt/app
